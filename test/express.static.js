@@ -1,3 +1,4 @@
+'use strict'
 
 var assert = require('assert')
 var Buffer = require('safe-buffer').Buffer
@@ -429,7 +430,7 @@ describe('express.static()', function () {
 
   describe('lastModified', function () {
     describe('when false', function () {
-      it('should not include Last-Modifed', function (done) {
+      it('should not include Last-Modified', function (done) {
         request(createApp(fixtures, { 'lastModified': false }))
           .get('/nums.txt')
           .expect(utils.shouldNotHaveHeader('Last-Modified'))
@@ -438,7 +439,7 @@ describe('express.static()', function () {
     })
 
     describe('when true', function () {
-      it('should include Last-Modifed', function (done) {
+      it('should include Last-Modified', function (done) {
         request(createApp(fixtures, { 'lastModified': true }))
           .get('/nums.txt')
           .expect('Last-Modified', /^\w{3}, \d+ \w+ \d+ \d+:\d+:\d+ \w+$/)

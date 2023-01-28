@@ -1,3 +1,4 @@
+'use strict'
 
 var after = require('after');
 var express = require('../')
@@ -32,7 +33,7 @@ describe('Router', function(){
     var another = new Router();
 
     another.get('/:bar', function(req, res){
-      req.params.bar.should.equal('route');
+      assert.strictEqual(req.params.bar, 'route')
       res.end();
     });
     router.use('/:foo', another);
@@ -44,7 +45,7 @@ describe('Router', function(){
     var router = new Router();
 
     router.use(function (req, res) {
-      false.should.be.true()
+      throw new Error('should not be called')
     });
 
     router.handle({ url: '', method: 'GET' }, {}, done);
@@ -61,6 +62,8 @@ describe('Router', function(){
   })
 
   it('should not stack overflow with many registered routes', function(done){
+    this.timeout(5000) // long-running test
+
     var handler = function(req, res){ res.end(new Error('wrong handler')) };
     var router = new Router();
 
@@ -75,6 +78,56 @@ describe('Router', function(){
     router.handle({ url: '/', method: 'GET' }, { end: done });
   });
 
+  it('should not stack overflow with a large sync route stack', function (done) {
+    this.timeout(5000) // long-running test
+
+    var router = new Router()
+
+    router.get('/foo', function (req, res, next) {
+      req.counter = 0
+      next()
+    })
+
+    for (var i = 0; i < 6000; i++) {
+      router.get('/foo', function (req, res, next) {
+        req.counter++
+        next()
+      })
+    }
+
+    router.get('/foo', function (req, res) {
+      assert.strictEqual(req.counter, 6000)
+      res.end()
+    })
+
+    router.handle({ url: '/foo', method: 'GET' }, { end: done })
+  })
+
+  it('should not stack overflow with a large sync middleware stack', function (done) {
+    this.timeout(5000) // long-running test
+
+    var router = new Router()
+
+    router.use(function (req, res, next) {
+      req.counter = 0
+      next()
+    })
+
+    for (var i = 0; i < 6000; i++) {
+      router.use(function (req, res, next) {
+        req.counter++
+        next()
+      })
+    }
+
+    router.use(function (req, res) {
+      assert.strictEqual(req.counter, 6000)
+      res.end()
+    })
+
+    router.handle({ url: '/', method: 'GET' }, { end: done })
+  })
+
   describe('.handle', function(){
     it('should dispatch', function(done){
       var router = new Router();
@@ -85,7 +138,7 @@ describe('Router', function(){
 
       var res = {
         send: function(val) {
-          val.should.equal('foo');
+          assert.strictEqual(val, 'foo')
           done();
         }
       }
